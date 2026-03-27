@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s # Интервал опроса по умолчанию (как просили в методичке)
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'flight_api'
+    # Эндпоинт, по которому наше приложение отдает метрики
+    metrics_path: '/metrics'
+    static_configs:
+      # Обращаемся к контейнеру по его имени в docker-compose и внутреннему порту
+      - targets: ['api:8080']

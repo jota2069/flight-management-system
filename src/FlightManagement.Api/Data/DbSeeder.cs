@@ -18,8 +18,8 @@ public static class DbSeeder
                 FlightNumber = "SU-101",
                 Origin = "Москва",
                 Destination = "Санкт-Петербург",
-                DepartureTime = new DateTime(2025, 6, 1, 8, 0, 0),
-                ArrivalTime = new DateTime(2025, 6, 1, 9, 30, 0),
+                DepartureTime = new DateTime(2025, 6, 1, 8, 0, 0, DateTimeKind.Utc),
+                ArrivalTime = new DateTime(2025, 6, 1, 9, 30, 0, DateTimeKind.Utc),
                 TotalSeats = 150,
                 Status = "Scheduled"
             },
@@ -28,8 +28,8 @@ public static class DbSeeder
                 FlightNumber = "SU-202",
                 Origin = "Москва",
                 Destination = "Казань",
-                DepartureTime = new DateTime(2025, 6, 2, 12, 0, 0),
-                ArrivalTime = new DateTime(2025, 6, 2, 13, 30, 0),
+                DepartureTime = new DateTime(2025, 6, 2, 12, 0, 0, DateTimeKind.Utc),
+                ArrivalTime = new DateTime(2025, 6, 2, 13, 30, 0, DateTimeKind.Utc),
                 TotalSeats = 120,
                 Status = "Scheduled"
             },
@@ -38,8 +38,8 @@ public static class DbSeeder
                 FlightNumber = "SU-303",
                 Origin = "Санкт-Петербург",
                 Destination = "Сочи",
-                DepartureTime = new DateTime(2025, 6, 3, 15, 0, 0),
-                ArrivalTime = new DateTime(2025, 6, 3, 17, 30, 0),
+                DepartureTime = new DateTime(2025, 6, 3, 15, 0, 0, DateTimeKind.Utc),
+                ArrivalTime = new DateTime(2025, 6, 3, 17, 30, 0, DateTimeKind.Utc),
                 TotalSeats = 180,
                 Status = "Scheduled"
             }
@@ -56,7 +56,7 @@ public static class DbSeeder
                 PassportNumber = "1234567890",
                 Email = "ivanov@example.com",
                 Phone = "+79001234567",
-                DateOfBirth = new DateTime(1990, 5, 15)
+                DateOfBirth = new DateTime(1990, 5, 15, 0, 0, 0, DateTimeKind.Utc)
             },
             new Passenger
             {
@@ -65,7 +65,7 @@ public static class DbSeeder
                 PassportNumber = "0987654321",
                 Email = "petrova@example.com",
                 Phone = "+79007654321",
-                DateOfBirth = new DateTime(1985, 3, 22)
+                DateOfBirth = new DateTime(1985, 3, 22, 0, 0, 0, DateTimeKind.Utc)
             },
             new Passenger
             {
@@ -74,7 +74,7 @@ public static class DbSeeder
                 PassportNumber = "1122334455",
                 Email = "sidorov@example.com",
                 Phone = "+79001122334",
-                DateOfBirth = new DateTime(1995, 8, 10)
+                DateOfBirth = new DateTime(1995, 8, 10, 0, 0, 0, DateTimeKind.Utc)
             }
         };
 

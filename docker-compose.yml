@@ -1,0 +1,86 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: flight_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: flightdb
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d flightdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flight-network
+
+  cache:
+    image: redis:7-alpine
+    container_name: flight_redis
+    networks:
+      - flight-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flight_api
+    environment:
+      - CONNECTION_STRING=Host=db;Port=5432;Database=flightdb;Username=postgres;Password=postgres
+      - REDIS_CONNECTION=cache:6379,abortConnect=false
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_started
+    networks:
+      - flight-network
+    # Порты наружу не пробрасываем! Доступ только через Nginx.
+
+  proxy:
+    image: nginx:alpine
+    container_name: flight_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+    networks:
+      - flight-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: flight_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - flight-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: flight_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - flight-network
+
+networks:
+  flight-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  grafana_data:
