@@ -6,6 +6,7 @@ COPY FlightManagement.sln .
 COPY src/FlightManagement.Api/FlightManagement.Api.csproj src/FlightManagement.Api/
 COPY src/FlightManagement.Client/FlightManagement.Client.csproj src/FlightManagement.Client/
 COPY tests/FlightManagement.Tests/FlightManagement.Tests.csproj tests/FlightManagement.Tests/
+COPY src/FlightManagement.Web/FlightManagement.Web.csproj src/FlightManagement.Web/
 
 RUN dotnet restore
 

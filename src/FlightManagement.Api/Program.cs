@@ -21,7 +21,11 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(redisConnection));
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(delegate (Microsoft.AspNetCore.Mvc.JsonOptions options)
+{
+    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    options.JsonSerializerOptions.WriteIndented = true; // Чтобы в Swagger всё было красиво с отступами
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

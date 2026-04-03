@@ -37,7 +37,6 @@ services:
         condition: service_started
     networks:
       - flight-network
-    # Порты наружу не пробрасываем! Доступ только через Nginx.
 
   proxy:
     image: nginx:alpine
@@ -74,6 +73,20 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
     depends_on:
       - prometheus
+    networks:
+      - flight-network
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.Web
+    container_name: flight_web
+    environment:
+      - API_BASE_URL=http://api:8080/
+    ports:
+      - "5000:8080"
+    depends_on:
+      - api
     networks:
       - flight-network
 

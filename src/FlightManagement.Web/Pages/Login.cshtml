@@ -1,0 +1,39 @@
+@page
+@model FlightManagement.Web.Pages.LoginModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8"/>
+    <title>Вход в систему</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #1a1a2e; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #16213e; padding: 40px; border-radius: 12px; width: 360px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        h2 { color: #e94560; text-align: center; margin-bottom: 30px; }
+        input { width: 100%; padding: 12px; margin: 8px 0 16px; border: 1px solid #0f3460; border-radius: 6px; background: #0f3460; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #e94560; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #c73652; }
+        .error { color: #e94560; text-align: center; margin-top: 10px; }
+        label { color: #a8b2d8; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>✈️ Аэропорт</h2>
+    <form method="post">
+        <label>Логин</label>
+        <input type="text" asp-for="Username" placeholder="admin или user"/>
+        <label>Пароль</label>
+        <input type="password" asp-for="Password" placeholder="Введите пароль"/>
+        <button type="submit">Войти</button>
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <p class="error">@Model.ErrorMessage</p>
+        }
+    </form>
+</div>
+</body>
+</html>

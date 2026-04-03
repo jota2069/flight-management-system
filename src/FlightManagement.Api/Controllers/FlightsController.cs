@@ -3,7 +3,11 @@ using FlightManagement.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StackExchange.Redis;
+using System;
+using System.Collections.Generic;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 
 namespace FlightManagement.Api.Controllers;
 
@@ -26,9 +30,16 @@ public class FlightsController : ControllerBase
         string cacheKey = "flights:all";
         string? cached = await _redis.StringGetAsync(cacheKey);
 
+        // Добавляем настройки для игнорирования циклических ссылок
+        JsonSerializerOptions jsonOptions = new JsonSerializerOptions
+        {
+            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+            PropertyNameCaseInsensitive = true
+        };
+
         if (cached is not null)
         {
-            List<Flight>? cachedFlights = JsonSerializer.Deserialize<List<Flight>>(cached);
+            List<Flight>? cachedFlights = JsonSerializer.Deserialize<List<Flight>>(cached, jsonOptions);
             return Ok(cachedFlights);
         }
 
@@ -37,7 +48,8 @@ public class FlightsController : ControllerBase
             .Include(f => f.CrewAssignments)
             .ToListAsync();
 
-        await _redis.StringSetAsync(cacheKey, JsonSerializer.Serialize(flights), TimeSpan.FromMinutes(5));
+        string serializedFlights = JsonSerializer.Serialize(flights, jsonOptions);
+        await _redis.StringSetAsync(cacheKey, serializedFlights, TimeSpan.FromMinutes(5));
 
         return Ok(flights);
     }
@@ -48,9 +60,15 @@ public class FlightsController : ControllerBase
         string cacheKey = $"flight:{id}";
         string? cached = await _redis.StringGetAsync(cacheKey);
 
+        JsonSerializerOptions jsonOptions = new JsonSerializerOptions
+        {
+            ReferenceHandler = ReferenceHandler.IgnoreCycles,
+            PropertyNameCaseInsensitive = true
+        };
+
         if (cached is not null)
         {
-            Flight? cachedFlight = JsonSerializer.Deserialize<Flight>(cached);
+            Flight? cachedFlight = JsonSerializer.Deserialize<Flight>(cached, jsonOptions);
             return Ok(cachedFlight);
         }
 
@@ -64,7 +82,8 @@ public class FlightsController : ControllerBase
             return NotFound();
         }
 
-        await _redis.StringSetAsync(cacheKey, JsonSerializer.Serialize(flight), TimeSpan.FromMinutes(5));
+        string serializedFlight = JsonSerializer.Serialize(flight, jsonOptions);
+        await _redis.StringSetAsync(cacheKey, serializedFlight, TimeSpan.FromMinutes(5));
 
         return Ok(flight);
     }
@@ -96,7 +115,8 @@ public class FlightsController : ControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            if (!await _context.Flights.AnyAsync(f => f.Id == id))
+            bool exists = await _context.Flights.AnyAsync(f => f.Id == id);
+            if (!exists)
             {
                 return NotFound();
             }
