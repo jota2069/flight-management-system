@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text;
 using System.Text.Json;
 
@@ -27,6 +28,10 @@ public class FlightApiService
         logger = message => Console.WriteLine($"[ЛОГ]: {message}");
         OnLog += logger;
 
+        ApiLogHandler? fileLogger = null;
+        fileLogger = message => File.AppendAllText("api_log.txt", $"{DateTime.Now:HH:mm:ss} {message}\n");
+        OnLog += fileLogger;
+
         try
         {
             OnLog?.Invoke("Запрос списка рейсов...");
@@ -45,6 +50,7 @@ public class FlightApiService
         finally
         {
             OnLog -= logger;
+            OnLog -= fileLogger;
         }
     }
 
@@ -53,6 +59,10 @@ public class FlightApiService
         ApiLogHandler? logger = null;
         logger = message => Console.WriteLine($"[ЛОГ]: {message}");
         OnLog += logger;
+
+        ApiLogHandler? fileLogger = null;
+        fileLogger = message => File.AppendAllText("api_log.txt", $"{DateTime.Now:HH:mm:ss} {message}\n");
+        OnLog += fileLogger;
 
         try
         {
@@ -73,6 +83,7 @@ public class FlightApiService
         finally
         {
             OnLog -= logger;
+            OnLog -= fileLogger;
         }
     }
 
@@ -81,6 +92,10 @@ public class FlightApiService
         ApiLogHandler? logger = null;
         logger = message => Console.WriteLine($"[ЛОГ]: {message}");
         OnLog += logger;
+
+        ApiLogHandler? fileLogger = null;
+        fileLogger = message => File.AppendAllText("api_log.txt", $"{DateTime.Now:HH:mm:ss} {message}\n");
+        OnLog += fileLogger;
 
         Func<FlightDto, string> serialize = f => JsonSerializer.Serialize(f);
 
@@ -100,6 +115,7 @@ public class FlightApiService
         finally
         {
             OnLog -= logger;
+            OnLog -= fileLogger;
         }
     }
 
@@ -108,6 +124,10 @@ public class FlightApiService
         ApiLogHandler? logger = null;
         logger = message => Console.WriteLine($"[ЛОГ]: {message}");
         OnLog += logger;
+
+        ApiLogHandler? fileLogger = null;
+        fileLogger = message => File.AppendAllText("api_log.txt", $"{DateTime.Now:HH:mm:ss} {message}\n");
+        OnLog += fileLogger;
 
         Func<FlightDto, string> serialize = f => JsonSerializer.Serialize(f);
 
@@ -127,6 +147,7 @@ public class FlightApiService
         finally
         {
             OnLog -= logger;
+            OnLog -= fileLogger;
         }
     }
 
@@ -135,6 +156,10 @@ public class FlightApiService
         ApiLogHandler? logger = null;
         logger = message => Console.WriteLine($"[ЛОГ]: {message}");
         OnLog += logger;
+
+        ApiLogHandler? fileLogger = null;
+        fileLogger = message => File.AppendAllText("api_log.txt", $"{DateTime.Now:HH:mm:ss} {message}\n");
+        OnLog += fileLogger;
 
         Action<int> logDelete = flightId => Console.WriteLine($"[ЛОГ]: Удаление рейса с id={flightId}");
         logDelete(id);
@@ -154,6 +179,7 @@ public class FlightApiService
         finally
         {
             OnLog -= logger;
+            OnLog -= fileLogger;
         }
     }
 }
