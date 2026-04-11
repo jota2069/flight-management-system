@@ -10,42 +10,91 @@
     <meta charset="utf-8"/>
     <title>Админ-панель</title>
     <style>
+        * { box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background: #1a1a2e; color: white; margin: 0; padding: 20px; }
         h1, h2 { color: #e94560; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
         th { background: #0f3460; padding: 12px; text-align: left; color: #a8b2d8; }
-        td { padding: 10px; border-bottom: 1px solid #0f3460; }
+        td { padding: 10px; border-bottom: 1px solid #0f3460; vertical-align: middle; }
         tr:hover { background: #16213e; }
-        .nav { display: flex; justify-content: space-between; align-items: center; }
-        .btn { padding: 8px 16px; border-radius: 6px; font-size: 14px; cursor: pointer; border: none; color: white; text-decoration: none; }
+        .nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn { padding: 8px 16px; border-radius: 6px; font-size: 14px; cursor: pointer; border: none; color: white; text-decoration: none; display: inline-block; }
         .btn-red { background: #e94560; }
         .btn-blue { background: #0f3460; }
-        .btn-green { background: #1a472a; }
-        .btn-sm { padding: 4px 10px; font-size: 12px; }
-        .form-card { background: #16213e; padding: 24px; border-radius: 12px; margin-top: 30px; }
-        input, select { width: 100%; padding: 10px; margin: 6px 0 14px; border: 1px solid #0f3460; border-radius: 6px; background: #0f3460; color: white; box-sizing: border-box; }
-        label { color: #a8b2d8; font-size: 14px; }
+        .btn-green { background: #1a6b3a; }
+        .btn-yellow { background: #7a5c00; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 0; }
+        .tab { padding: 10px 22px; border-radius: 8px 8px 0 0; cursor: pointer; background: #0f3460; color: #a8b2d8; border: none; font-size: 14px; }
+        .tab.active { background: #e94560; color: white; }
+        .tab-content { display: none; background: #12122a; border-radius: 0 8px 8px 8px; padding: 20px; }
+        .tab-content.active { display: block; }
+        .form-card { background: #16213e; padding: 24px; border-radius: 12px; margin-top: 24px; }
+        input, select { width: 100%; padding: 10px; margin: 5px 0 14px; border: 1px solid #0f3460; border-radius: 6px; background: #0f3460; color: white; font-size: 14px; }
+        label { color: #a8b2d8; font-size: 13px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .success { color: #51cf66; margin-top: 10px; }
-        .error { color: #e94560; margin-top: 10px; }
+        .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+        .success { color: #51cf66; padding: 10px; background: #1a472a; border-radius: 6px; margin-bottom: 16px; }
+        .error { color: #ff6b6b; padding: 10px; background: #4a1a1a; border-radius: 6px; margin-bottom: 16px; }
+        .status { padding: 4px 10px; border-radius: 20px; font-size: 12px; }
+        .scheduled { background: #1a472a; color: #51cf66; }
+        .confirmed { background: #1a3a6b; color: #74b3ff; }
+        .info-row { display: flex; gap: 16px; margin-bottom: 24px; }
+        .info-card { background: #16213e; border-radius: 10px; padding: 16px 24px; flex: 1; text-align: center; }
+        .info-card .num { font-size: 28px; font-weight: bold; color: #e94560; }
+        .info-card .lbl { font-size: 12px; color: #a8b2d8; margin-top: 4px; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100; justify-content: center; align-items: center; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: #16213e; padding: 32px; border-radius: 14px; width: 560px; max-width: 95vw; border: 1px solid #0f3460; max-height: 90vh; overflow-y: auto; }
+        .modal h2 { margin-top: 0; }
+        .modal-close { float: right; background: none; border: none; color: #a8b2d8; font-size: 22px; cursor: pointer; margin-top: -8px; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; background: #0f3460; color: #a8b2d8; }
     </style>
 </head>
 <body>
-    <div class="nav">
-        <h1>⚙️ Админ-панель</h1>
-        <div>
-            <a class="btn btn-blue" href="/Index">Табло</a>
-            <form method="post" asp-page-handler="Logout" style="display:inline; margin-left:8px;">
-                <button class="btn btn-red" type="submit">Выйти</button>
-            </form>
-        </div>
+
+<div class="nav">
+    <h1>⚙️ Панель администратора</h1>
+    <div style="display:flex; gap:10px;">
+        <a class="btn btn-blue" href="/Index">Табло</a>
+        <form method="post" asp-page-handler="Logout" style="display:inline;">
+            <button class="btn btn-red" type="submit">Выйти</button>
+        </form>
     </div>
+</div>
 
-    @if (!string.IsNullOrEmpty(Model.Message))
-    {
-        <p class="@(Model.IsError ? "error" : "success")">@Model.Message</p>
-    }
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="@(Model.IsError ? "error" : "success")">@Model.Message</div>
+}
 
+<div class="info-row">
+    <div class="info-card">
+        <div class="num">@Model.Flights.Count</div>
+        <div class="lbl">Рейсов</div>
+    </div>
+    <div class="info-card">
+        <div class="num">@Model.Passengers.Count</div>
+        <div class="lbl">Пассажиров</div>
+    </div>
+    <div class="info-card">
+        <div class="num">@Model.Tickets.Count</div>
+        <div class="lbl">Билетов</div>
+    </div>
+    <div class="info-card">
+        <div class="num">@Model.Tickets.Where(t => t.Status == "Confirmed").Count()</div>
+        <div class="lbl">Подтверждённых</div>
+    </div>
+</div>
+
+<div class="tabs">
+    <button class="tab active" onclick="switchTab('flights', this)">✈️ Рейсы</button>
+    <button class="tab" onclick="switchTab('passengers', this)">👤 Пассажиры</button>
+    <button class="tab" onclick="switchTab('tickets', this)">🎫 Билеты</button>
+</div>
+
+<!-- Вкладка: Рейсы -->
+<div id="tab-flights" class="tab-content active">
     <table>
         <thead>
             <tr>
@@ -64,16 +113,21 @@
             @foreach (var flight in Model.Flights)
             {
                 <tr>
-                    <td>@flight.Id</td>
-                    <td>@flight.FlightNumber</td>
+                    <td><span class="badge">#@flight.Id</span></td>
+                    <td><strong>@flight.FlightNumber</strong></td>
                     <td>@flight.Origin</td>
                     <td>@flight.Destination</td>
                     <td>@flight.DepartureTime.ToString("dd.MM.yyyy HH:mm")</td>
                     <td>@flight.ArrivalTime.ToString("dd.MM.yyyy HH:mm")</td>
                     <td>@flight.TotalSeats</td>
-                    <td>@flight.Status</td>
-                    <td>
-                        <form method="post" asp-page-handler="Delete" style="display:inline;">
+                    <td><span class="status scheduled">@flight.Status</span></td>
+                    <td style="display:flex; gap:6px;">
+                        <button class="btn btn-yellow btn-sm"
+                                onclick="openEdit(@flight.Id, '@flight.FlightNumber', '@flight.Origin', '@flight.Destination', '@flight.DepartureTime.ToString("yyyy-MM-ddTHH:mm")', '@flight.ArrivalTime.ToString("yyyy-MM-ddTHH:mm")', @flight.TotalSeats, '@flight.Status')">
+                            Изменить
+                        </button>
+                        <form method="post" asp-page-handler="Delete"
+                              onsubmit="return confirm('Удалить рейс @flight.FlightNumber?')">
                             <input type="hidden" name="id" value="@flight.Id"/>
                             <button class="btn btn-red btn-sm" type="submit">Удалить</button>
                         </form>
@@ -107,5 +161,149 @@
             <button class="btn btn-green" type="submit">Добавить рейс</button>
         </form>
     </div>
+</div>
+
+<!-- Вкладка: Пассажиры -->
+<div id="tab-passengers" class="tab-content">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Имя</th>
+                <th>Фамилия</th>
+                <th>Паспорт</th>
+                <th>Email</th>
+                <th>Телефон</th>
+                <th>Дата рождения</th>
+                <th>Билетов</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in Model.Passengers)
+            {
+                <tr>
+                    <td><span class="badge">#@p.Id</span></td>
+                    <td>@p.FirstName</td>
+                    <td>@p.LastName</td>
+                    <td>@p.PassportNumber</td>
+                    <td>@p.Email</td>
+                    <td>@p.Phone</td>
+                    <td>@p.DateOfBirth.ToString("dd.MM.yyyy")</td>
+                    <td>
+                        <span class="badge">
+                            @Model.Tickets.Count(t => t.PassengerId == p.Id)
+                        </span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Вкладка: Билеты -->
+<div id="tab-tickets" class="tab-content">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Рейс</th>
+                <th>Пассажир</th>
+                <th>Место</th>
+                <th>Цена</th>
+                <th>Статус</th>
+                <th>Действие</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var ticket in Model.Tickets)
+            {
+                <tr>
+                    <td><span class="badge">#@ticket.Id</span></td>
+                    <td><strong>@ticket.Flight?.FlightNumber</strong><br/><small style="color:#a8b2d8;">@ticket.Flight?.Origin → @ticket.Flight?.Destination</small></td>
+                    <td>@ticket.Passenger?.LastName @ticket.Passenger?.FirstName<br/><small style="color:#a8b2d8;">@ticket.Passenger?.Email</small></td>
+                    <td>@ticket.SeatNumber</td>
+                    <td>@ticket.Price.ToString("N0") ₽</td>
+                    <td><span class="status confirmed">@ticket.Status</span></td>
+                    <td>
+                        <form method="post" asp-page-handler="DeleteTicket"
+                              onsubmit="return confirm('Удалить билет #@ticket.Id?')">
+                            <input type="hidden" name="ticketId" value="@ticket.Id"/>
+                            <button class="btn btn-red btn-sm" type="submit">Удалить</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Модальное окно редактирования рейса -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeEdit()">✕</button>
+        <h2>Редактировать рейс</h2>
+        <form method="post" asp-page-handler="Update">
+            <input type="hidden" id="editId" name="EditInput.Id"/>
+            <div class="grid">
+                <div>
+                    <label>Номер рейса</label>
+                    <input type="text" id="editFlightNumber" name="EditInput.FlightNumber"/>
+                    <label>Откуда</label>
+                    <input type="text" id="editOrigin" name="EditInput.Origin"/>
+                    <label>Куда</label>
+                    <input type="text" id="editDestination" name="EditInput.Destination"/>
+                </div>
+                <div>
+                    <label>Дата вылета</label>
+                    <input type="datetime-local" id="editDeparture" name="EditInput.DepartureTime"/>
+                    <label>Дата прилёта</label>
+                    <input type="datetime-local" id="editArrival" name="EditInput.ArrivalTime"/>
+                    <label>Мест</label>
+                    <input type="number" id="editSeats" name="EditInput.TotalSeats"/>
+                </div>
+            </div>
+            <label>Статус</label>
+            <select id="editStatus" name="EditInput.Status">
+                <option value="Scheduled">Scheduled</option>
+                <option value="Delayed">Delayed</option>
+                <option value="Cancelled">Cancelled</option>
+                <option value="Completed">Completed</option>
+            </select>
+            <div style="display:flex; gap:10px; margin-top:8px;">
+                <button type="submit" class="btn btn-green" style="flex:1;">Сохранить</button>
+                <button type="button" class="btn btn-red" onclick="closeEdit()" style="flex:1;">Отмена</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function switchTab(name, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+}
+
+function openEdit(id, num, from, to, dep, arr, seats, status) {
+    document.getElementById('editId').value = id;
+    document.getElementById('editFlightNumber').value = num;
+    document.getElementById('editOrigin').value = from;
+    document.getElementById('editDestination').value = to;
+    document.getElementById('editDeparture').value = dep;
+    document.getElementById('editArrival').value = arr;
+    document.getElementById('editSeats').value = seats;
+    document.getElementById('editStatus').value = status;
+    document.getElementById('editModal').classList.add('open');
+}
+
+function closeEdit() {
+    document.getElementById('editModal').classList.remove('open');
+}
+
+window.onclick = function(e) {
+    if (e.target === document.getElementById('editModal')) closeEdit();
+}
+</script>
 </body>
 </html>

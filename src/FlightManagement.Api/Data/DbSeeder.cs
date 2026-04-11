@@ -12,38 +12,33 @@ public static class DbSeeder
         }
 
         List<Flight> flights = new List<Flight>
-        {
-            new Flight
-            {
-                FlightNumber = "SU-101",
-                Origin = "Москва",
-                Destination = "Санкт-Петербург",
-                DepartureTime = new DateTime(2025, 6, 1, 8, 0, 0, DateTimeKind.Utc),
-                ArrivalTime = new DateTime(2025, 6, 1, 9, 30, 0, DateTimeKind.Utc),
-                TotalSeats = 150,
-                Status = "Scheduled"
-            },
-            new Flight
-            {
-                FlightNumber = "SU-202",
-                Origin = "Москва",
-                Destination = "Казань",
-                DepartureTime = new DateTime(2025, 6, 2, 12, 0, 0, DateTimeKind.Utc),
-                ArrivalTime = new DateTime(2025, 6, 2, 13, 30, 0, DateTimeKind.Utc),
-                TotalSeats = 120,
-                Status = "Scheduled"
-            },
-            new Flight
-            {
-                FlightNumber = "SU-303",
-                Origin = "Санкт-Петербург",
-                Destination = "Сочи",
-                DepartureTime = new DateTime(2025, 6, 3, 15, 0, 0, DateTimeKind.Utc),
-                ArrivalTime = new DateTime(2025, 6, 3, 17, 30, 0, DateTimeKind.Utc),
-                TotalSeats = 180,
-                Status = "Scheduled"
-            }
-        };
+{
+    // В Нальчик (5 рейсов)
+    new Flight { FlightNumber = "RA-101", Origin = "Москва", Destination = "Нальчик", DepartureTime = new DateTime(2025, 6, 1, 6, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 1, 9, 30, 0, DateTimeKind.Utc), TotalSeats = 120, Status = "Scheduled" },
+    new Flight { FlightNumber = "RA-102", Origin = "Санкт-Петербург", Destination = "Нальчик", DepartureTime = new DateTime(2025, 6, 3, 10, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 3, 14, 0, 0, DateTimeKind.Utc), TotalSeats = 100, Status = "Scheduled" },
+    new Flight { FlightNumber = "RA-103", Origin = "Казань", Destination = "Нальчик", DepartureTime = new DateTime(2025, 6, 5, 8, 30, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 5, 11, 45, 0, DateTimeKind.Utc), TotalSeats = 80, Status = "Scheduled" },
+    new Flight { FlightNumber = "RA-104", Origin = "Екатеринбург", Destination = "Нальчик", DepartureTime = new DateTime(2025, 6, 7, 14, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 7, 18, 30, 0, DateTimeKind.Utc), TotalSeats = 150, Status = "Scheduled" },
+    new Flight { FlightNumber = "RA-105", Origin = "Новосибирск", Destination = "Нальчик", DepartureTime = new DateTime(2025, 6, 9, 7, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 9, 13, 0, 0, DateTimeKind.Utc), TotalSeats = 90, Status = "Scheduled" },
+
+    // Из Нальчика (5 рейсов)
+    new Flight { FlightNumber = "RA-201", Origin = "Нальчик", Destination = "Москва", DepartureTime = new DateTime(2025, 6, 2, 11, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 2, 14, 30, 0, DateTimeKind.Utc), TotalSeats = 120, Status = "Scheduled" },
+    new Flight { FlightNumber = "RA-202", Origin = "Нальчик", Destination = "Санкт-Петербург", DepartureTime = new DateTime(2025, 6, 4, 15, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 4, 19, 0, 0, DateTimeKind.Utc), TotalSeats = 100, Status = "Scheduled" },
+    new Flight { FlightNumber = "RA-203", Origin = "Нальчик", Destination = "Казань", DepartureTime = new DateTime(2025, 6, 6, 9, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 6, 12, 15, 0, DateTimeKind.Utc), TotalSeats = 80, Status = "Scheduled" },
+    new Flight { FlightNumber = "RA-204", Origin = "Нальчик", Destination = "Екатеринбург", DepartureTime = new DateTime(2025, 6, 8, 16, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 8, 20, 30, 0, DateTimeKind.Utc), TotalSeats = 150, Status = "Scheduled" },
+    new Flight { FlightNumber = "RA-205", Origin = "Нальчик", Destination = "Новосибирск", DepartureTime = new DateTime(2025, 6, 10, 6, 30, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 10, 12, 30, 0, DateTimeKind.Utc), TotalSeats = 90, Status = "Scheduled" },
+
+    // Остальные российские (10 рейсов)
+    new Flight { FlightNumber = "SU-301", Origin = "Москва", Destination = "Санкт-Петербург", DepartureTime = new DateTime(2025, 6, 1, 8, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 1, 9, 30, 0, DateTimeKind.Utc), TotalSeats = 150, Status = "Scheduled" },
+    new Flight { FlightNumber = "SU-302", Origin = "Москва", Destination = "Сочи", DepartureTime = new DateTime(2025, 6, 2, 9, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 2, 11, 30, 0, DateTimeKind.Utc), TotalSeats = 180, Status = "Scheduled" },
+    new Flight { FlightNumber = "SU-303", Origin = "Москва", Destination = "Казань", DepartureTime = new DateTime(2025, 6, 3, 7, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 3, 8, 30, 0, DateTimeKind.Utc), TotalSeats = 130, Status = "Scheduled" },
+    new Flight { FlightNumber = "SU-304", Origin = "Санкт-Петербург", Destination = "Сочи", DepartureTime = new DateTime(2025, 6, 4, 10, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 4, 12, 45, 0, DateTimeKind.Utc), TotalSeats = 160, Status = "Scheduled" },
+    new Flight { FlightNumber = "SU-305", Origin = "Екатеринбург", Destination = "Москва", DepartureTime = new DateTime(2025, 6, 5, 6, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 5, 8, 30, 0, DateTimeKind.Utc), TotalSeats = 140, Status = "Scheduled" },
+    new Flight { FlightNumber = "SU-306", Origin = "Новосибирск", Destination = "Москва", DepartureTime = new DateTime(2025, 6, 6, 5, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 6, 9, 0, 0, DateTimeKind.Utc), TotalSeats = 200, Status = "Scheduled" },
+    new Flight { FlightNumber = "SU-307", Origin = "Казань", Destination = "Санкт-Петербург", DepartureTime = new DateTime(2025, 6, 7, 11, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 7, 13, 0, 0, DateTimeKind.Utc), TotalSeats = 110, Status = "Scheduled" },
+    new Flight { FlightNumber = "SU-308", Origin = "Сочи", Destination = "Москва", DepartureTime = new DateTime(2025, 6, 8, 13, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 8, 15, 30, 0, DateTimeKind.Utc), TotalSeats = 175, Status = "Scheduled" },
+    new Flight { FlightNumber = "SU-309", Origin = "Владивосток", Destination = "Москва", DepartureTime = new DateTime(2025, 6, 9, 1, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 9, 10, 0, 0, DateTimeKind.Utc), TotalSeats = 220, Status = "Scheduled" },
+    new Flight { FlightNumber = "SU-310", Origin = "Москва", Destination = "Владивосток", DepartureTime = new DateTime(2025, 6, 10, 11, 0, 0, DateTimeKind.Utc), ArrivalTime = new DateTime(2025, 6, 10, 20, 0, 0, DateTimeKind.Utc), TotalSeats = 220, Status = "Scheduled" },
+};
 
         context.Flights.AddRange(flights);
 
