@@ -91,43 +91,31 @@ public class FlightsController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<Flight>> Create(Flight flight)
+    public async Task<ActionResult<Flight>> Create(Flight input)
     {
+        if (!ValidFlight(input)) return BadRequest("Некорректные параметры рейса.");
+        var flight = new Flight();
+        Copy(input, flight);
         _context.Flights.Add(flight);
         await _context.SaveChangesAsync();
-
         await InvalidateCache();
-
         return CreatedAtAction(nameof(GetById), new { id = flight.Id }, flight);
     }
 
     [HttpPut("{id:int}")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult> Update(int id, Flight flight)
+    public async Task<ActionResult> Update(int id, Flight input)
     {
-        if (id != flight.Id)
-        {
-            return BadRequest();
-        }
-
-        _context.Entry(flight).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            bool exists = await _context.Flights.AnyAsync(f => f.Id == id);
-            if (!exists)
-            {
-                return NotFound();
-            }
-            throw;
-        }
-
+        if (id != input.Id || !ValidFlight(input)) return BadRequest();
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        var flights = await FlightLocks.Acquire(_context, id);
+        if (!flights.TryGetValue(id, out var flight)) return NotFound();
+        if (await _context.Tickets.CountAsync(t => t.FlightId == id) > input.TotalSeats)
+            return Conflict("Вместимость меньше числа забронированных мест.");
+        Copy(input, flight);
+        await _context.SaveChangesAsync();
+        await transaction.CommitAsync();
         await InvalidateCache(id);
-
         return NoContent();
     }
 
@@ -135,28 +123,35 @@ public class FlightsController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult> Delete(int id)
     {
-        Flight? flight = await _context.Flights.FindAsync(id);
-
-        if (flight is null)
-        {
-            return NotFound();
-        }
-
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        var flights = await FlightLocks.Acquire(_context, id);
+        if (!flights.TryGetValue(id, out var flight)) return NotFound();
+        if (await _context.Tickets.AnyAsync(t => t.FlightId == id))
+            return Conflict("Сначала отмените билеты рейса.");
         _context.Flights.Remove(flight);
         await _context.SaveChangesAsync();
-
+        await transaction.CommitAsync();
         await InvalidateCache(id);
-
         return NoContent();
+    }
+
+    private static bool ValidFlight(Flight input) => input.TotalSeats > 0 &&
+        input.ArrivalTime > input.DepartureTime && !string.IsNullOrWhiteSpace(input.FlightNumber);
+
+    private static void Copy(Flight input, Flight flight)
+    {
+        flight.FlightNumber = input.FlightNumber;
+        flight.Origin = input.Origin;
+        flight.Destination = input.Destination;
+        flight.DepartureTime = DateTime.SpecifyKind(input.DepartureTime, DateTimeKind.Utc);
+        flight.ArrivalTime = DateTime.SpecifyKind(input.ArrivalTime, DateTimeKind.Utc);
+        flight.TotalSeats = input.TotalSeats;
+        flight.Status = input.Status;
     }
 
     private async Task InvalidateCache(int? id = null)
     {
         await _redis.KeyDeleteAsync("schedule:v2:flights:all");
-
-        if (id.HasValue)
-        {
-            await _redis.KeyDeleteAsync($"schedule:v2:flight:{id}");
-        }
+        if (id.HasValue) await _redis.KeyDeleteAsync($"schedule:v2:flight:{id}");
     }
 }

@@ -6,6 +6,7 @@ public class Ticket
 {
     [JsonIgnore] public string? OwnerUserId { get; set; }
     public int Id { get; set; }
+    [JsonIgnore] public string NormalizedSeatNumber { get; private set; } = string.Empty;
     public string SeatNumber { get; set; } = string.Empty;
     public decimal Price { get; set; }
     public string Status { get; set; } = "Confirmed";

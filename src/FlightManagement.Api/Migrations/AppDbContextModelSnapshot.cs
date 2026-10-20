@@ -57,7 +57,10 @@ namespace FlightManagement.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Flights");
+                    b.ToTable("Flights", t =>
+                        {
+                            t.HasCheckConstraint("CK_Flights_PositiveSeats", "\"TotalSeats\" > 0");
+                        });
                 });
 
             modelBuilder.Entity("FlightManagement.Api.Models.FlightAttendant", b =>
@@ -175,6 +178,12 @@ namespace FlightManagement.Api.Migrations
                     b.Property<int>("FlightId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("NormalizedSeatNumber")
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("text")
+                        .HasComputedColumnSql("upper(btrim(\"SeatNumber\"))", true);
+
                     b.Property<string>("OwnerUserId")
                         .HasColumnType("text");
 
@@ -197,13 +206,19 @@ namespace FlightManagement.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FlightId");
-
                     b.HasIndex("OwnerUserId");
 
                     b.HasIndex("PassengerId");
 
-                    b.ToTable("Tickets");
+                    b.HasIndex("FlightId", "NormalizedSeatNumber")
+                        .IsUnique();
+
+                    b.ToTable("Tickets", t =>
+                        {
+                            t.HasCheckConstraint("CK_Tickets_PositivePrice", "\"Price\" > 0");
+
+                            t.HasCheckConstraint("CK_Tickets_SeatLabel", "btrim(\"SeatNumber\") ~ '^[A-Za-z0-9]{1,8}$'");
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -445,7 +460,7 @@ namespace FlightManagement.Api.Migrations
                     b.HasOne("FlightManagement.Api.Models.Passenger", "Passenger")
                         .WithMany("Tickets")
                         .HasForeignKey("PassengerId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Flight");
