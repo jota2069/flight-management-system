@@ -10,8 +10,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(FlightSecurity.ConnectionString(builder.Configuration)));
 builder.Services.AddFlightIdentity<AppDbContext>(builder.Configuration, builder.Environment);
-builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
-    ConnectionMultiplexer.Connect(builder.Configuration["REDIS_CONNECTION"] ?? "localhost:6379,abortConnect=false"));
+builder.Services.AddSingleton(_ => new Lazy<IConnectionMultiplexer>(() =>
+{
+    var redis = ConfigurationOptions.Parse(builder.Configuration["REDIS_CONNECTION"] ?? "localhost:6379");
+    redis.AbortOnConnectFail = false;
+    redis.ConnectTimeout = 500;
+    redis.ConnectRetry = 0;
+    redis.AsyncTimeout = 500;
+    redis.SyncTimeout = 500;
+    return ConnectionMultiplexer.Connect(redis);
+}));
+builder.Services.AddScoped<ScheduleCache>();
+// Dispose the shared connection without forcing it to connect on shutdown.
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
@@ -38,6 +48,11 @@ app.MapMetrics();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.Lifetime.ApplicationStopped.Register(() =>
+{
+    var redis = app.Services.GetRequiredService<Lazy<IConnectionMultiplexer>>();
+    if (redis.IsValueCreated) redis.Value.Dispose();
+});
 app.Run();
 
 public partial class ApiProgram { }

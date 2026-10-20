@@ -51,6 +51,7 @@ public class TicketsController(AppDbContext context) : ControllerBase
         try
         {
             await context.SaveChangesAsync();
+            await ScheduleCache.Advance(context);
             await transaction.CommitAsync();
         }
         catch (DbUpdateException e) when (e.InnerException is PostgresException { SqlState: "23505" })
@@ -87,6 +88,7 @@ public class TicketsController(AppDbContext context) : ControllerBase
         try
         {
             await context.SaveChangesAsync();
+            await ScheduleCache.Advance(context);
             await transaction.CommitAsync();
         }
         catch (DbUpdateException e) when (e.InnerException is PostgresException { SqlState: "23505" or "23503" })
@@ -108,6 +110,7 @@ public class TicketsController(AppDbContext context) : ControllerBase
         if (ticket.FlightId != original.FlightId) return Conflict("Билет изменился. Повторите запрос.");
         context.Tickets.Remove(ticket);
         await context.SaveChangesAsync();
+        await ScheduleCache.Advance(context);
         await transaction.CommitAsync();
         return NoContent();
     }

@@ -156,8 +156,8 @@ public sealed class FlightHost : IAsyncLifetime
             Configure(builder, host);
             builder.ConfigureServices(services =>
             {
-                services.RemoveAll<IConnectionMultiplexer>();
-                services.AddSingleton(host.Multiplexer.Object);
+                services.RemoveAll<Lazy<IConnectionMultiplexer>>();
+                services.AddSingleton(new Lazy<IConnectionMultiplexer>(() => host.Multiplexer.Object));
             });
         }
     }

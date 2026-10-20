@@ -22,6 +22,29 @@ namespace FlightManagement.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("FlightManagement.Api.Models.CacheRevision", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<long>("Version")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CacheRevisions");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Version = 0L
+                        });
+                });
+
             modelBuilder.Entity("FlightManagement.Api.Models.Flight", b =>
                 {
                     b.Property<int>("Id")

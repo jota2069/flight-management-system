@@ -8,6 +8,7 @@ namespace FlightManagement.Api.Data;
 public class AppDbContext : FlightIdentityDbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    public DbSet<CacheRevision> CacheRevisions => Set<CacheRevision>();
     public DbSet<Flight> Flights => Set<Flight>();
     public DbSet<Passenger> Passengers => Set<Passenger>();
     public DbSet<Ticket> Tickets => Set<Ticket>();
@@ -17,6 +18,7 @@ public class AppDbContext : FlightIdentityDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<CacheRevision>().HasData(new CacheRevision { Id = 1, Version = 0 });
         modelBuilder.Entity<Ticket>(entity =>
         {
             entity.Property(t => t.NormalizedSeatNumber)
