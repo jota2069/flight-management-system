@@ -123,7 +123,11 @@
                     <td><span class="status scheduled">@flight.Status</span></td>
                     <td style="display:flex; gap:6px;">
                         <button class="btn btn-yellow btn-sm"
-                                onclick="openEdit(@flight.Id, '@flight.FlightNumber', '@flight.Origin', '@flight.Destination', '@flight.DepartureTime.ToString("yyyy-MM-ddTHH:mm")', '@flight.ArrivalTime.ToString("yyyy-MM-ddTHH:mm")', @flight.TotalSeats, '@flight.Status')">
+                                data-edit-flight="@flight.Id" data-flight-number="@flight.FlightNumber"
+                                data-origin="@flight.Origin" data-destination="@flight.Destination"
+                                data-departure="@flight.DepartureTime.ToString("yyyy-MM-ddTHH:mm")"
+                                data-arrival="@flight.ArrivalTime.ToString("yyyy-MM-ddTHH:mm")"
+                                data-seats="@flight.TotalSeats" data-status="@flight.Status">
                             Изменить
                         </button>
                         <form method="post" asp-page-handler="Delete"
@@ -296,6 +300,11 @@ function openEdit(id, num, from, to, dep, arr, seats, status) {
     document.getElementById('editStatus').value = status;
     document.getElementById('editModal').classList.add('open');
 }
+
+document.querySelectorAll('[data-edit-flight]').forEach(button =>
+    button.addEventListener('click', () => openEdit(Number(button.dataset.editFlight),
+        button.dataset.flightNumber, button.dataset.origin, button.dataset.destination,
+        button.dataset.departure, button.dataset.arrival, Number(button.dataset.seats), button.dataset.status)));
 
 function closeEdit() {
     document.getElementById('editModal').classList.remove('open');

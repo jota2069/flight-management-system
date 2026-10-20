@@ -118,7 +118,9 @@
                     <td><span class="status scheduled">@flight.Status</span></td>
                     <td>
                         <button class="btn btn-green btn-sm"
-                                onclick="openBooking(@flight.Id, '@flight.FlightNumber', '@flight.Origin', '@flight.Destination', '@flight.DepartureTime.ToString("dd.MM.yyyy HH:mm")')">
+                                data-book-flight="@flight.Id" data-flight-number="@flight.FlightNumber"
+                                data-origin="@flight.Origin" data-destination="@flight.Destination"
+                                data-departure="@flight.DepartureTime.ToString("dd.MM.yyyy HH:mm")">
                             Забронировать
                         </button>
                     </td>
@@ -226,10 +228,14 @@ function switchTab(name, btn) {
 
 function openBooking(id, num, from, to, dep) {
     document.getElementById('bookFlightId').value = id;
-    document.getElementById('flightInfo').innerHTML =
-        '✈️ <strong>' + num + '</strong> &nbsp;|&nbsp; ' + from + ' → ' + to + ' &nbsp;|&nbsp; Вылет: ' + dep;
+    document.getElementById('flightInfo').textContent =
+        '✈️ ' + num + ' | ' + from + ' → ' + to + ' | Вылет: ' + dep;
     document.getElementById('bookingModal').classList.add('open');
 }
+
+document.querySelectorAll('[data-book-flight]').forEach(button =>
+    button.addEventListener('click', () => openBooking(Number(button.dataset.bookFlight),
+        button.dataset.flightNumber, button.dataset.origin, button.dataset.destination, button.dataset.departure)));
 
 function closeBooking() {
     document.getElementById('bookingModal').classList.remove('open');
