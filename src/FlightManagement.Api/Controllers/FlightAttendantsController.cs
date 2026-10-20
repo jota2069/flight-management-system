@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using FlightManagement.Api.Data;
 using FlightManagement.Api.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -6,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FlightManagement.Api.Controllers;
 
 [ApiController]
+[Authorize(Roles = "Admin")]
 [Route("api/[controller]")]
 public class FlightAttendantsController : ControllerBase
 {

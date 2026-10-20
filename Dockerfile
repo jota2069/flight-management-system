@@ -8,6 +8,7 @@ COPY src/FlightManagement.Client/FlightManagement.Client.csproj src/FlightManage
 COPY tests/FlightManagement.Tests/FlightManagement.Tests.csproj tests/FlightManagement.Tests/
 COPY src/FlightManagement.Web/FlightManagement.Web.csproj src/FlightManagement.Web/
 
+COPY src/FlightManagement.Security/FlightManagement.Security.csproj src/FlightManagement.Security/
 RUN dotnet restore
 
 # Копируем весь исходный код и выполняем сборку (publish)

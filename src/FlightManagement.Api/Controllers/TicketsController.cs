@@ -1,113 +1,76 @@
+using System.Security.Claims;
 using FlightManagement.Api.Data;
 using FlightManagement.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace FlightManagement.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
-public class TicketsController : ControllerBase
+public class TicketsController(AppDbContext context) : ControllerBase
 {
-    private readonly AppDbContext _context;
-
-    public TicketsController(AppDbContext context)
-    {
-        _context = context;
-    }
+    private string OwnerId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    private IQueryable<Ticket> VisibleTickets => User.IsInRole("Admin")
+        ? context.Tickets : context.Tickets.Where(t => t.OwnerUserId == OwnerId);
 
     [HttpGet]
-    public async Task<ActionResult<List<Ticket>>> GetAll()
-    {
-        List<Ticket> tickets = await _context.Tickets
-            .Include(t => t.Flight)
-            .Include(t => t.Passenger)
-            .ToListAsync();
-
-        return Ok(tickets);
-    }
+    public async Task<ActionResult<List<Ticket>>> GetAll() =>
+        Ok(await VisibleTickets.AsNoTracking().Include(t => t.Flight).Include(t => t.Passenger).ToListAsync());
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Ticket>> GetById(int id)
     {
-        Ticket? ticket = await _context.Tickets
-            .Include(t => t.Flight)
-            .Include(t => t.Passenger)
-            .FirstOrDefaultAsync(t => t.Id == id);
-
-        if (ticket is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(ticket);
+        var ticket = await VisibleTickets.AsNoTracking().Include(t => t.Flight)
+            .Include(t => t.Passenger).FirstOrDefaultAsync(t => t.Id == id);
+        return ticket is null ? NotFound() : Ok(ticket);
     }
 
     [HttpPost]
-    public async Task<ActionResult<Ticket>> Create(Ticket ticket)
+    public async Task<ActionResult<Ticket>> Create(Ticket input)
     {
-        bool flightExists = await _context.Flights.AnyAsync(f => f.Id == ticket.FlightId);
-        bool passengerExists = await _context.Passengers.AnyAsync(p => p.Id == ticket.PassengerId);
-
-        if (!flightExists || !passengerExists)
+        if (!await context.Flights.AnyAsync(f => f.Id == input.FlightId) ||
+            !await context.Passengers.AnyAsync(p => p.Id == input.PassengerId &&
+                (p.OwnerUserId == OwnerId || User.IsInRole("Admin"))))
+            return BadRequest("Рейс или доступный пассажир не найден.");
+        var ticket = new Ticket
         {
-            return BadRequest("Указанный рейс или пассажир не существует.");
-        }
-
-        ticket.PurchaseDate = DateTime.UtcNow;
-        _context.Tickets.Add(ticket);
-        await _context.SaveChangesAsync();
-
+            FlightId = input.FlightId, PassengerId = input.PassengerId,
+            SeatNumber = input.SeatNumber, Price = input.Price,
+            Status = "Confirmed", PurchaseDate = DateTime.UtcNow, OwnerUserId = OwnerId
+        };
+        context.Tickets.Add(ticket);
+        await context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetById), new { id = ticket.Id }, ticket);
     }
 
     [HttpPut("{id:int}")]
-    public async Task<ActionResult> Update(int id, Ticket ticket)
+    public async Task<ActionResult> Update(int id, Ticket input)
     {
-        if (id != ticket.Id)
-        {
+        var ticket = await VisibleTickets.FirstOrDefaultAsync(t => t.Id == id);
+        if (ticket is null) return NotFound();
+        if (id != input.Id || !await context.Flights.AnyAsync(f => f.Id == input.FlightId) ||
+            !await context.Passengers.AnyAsync(p => p.Id == input.PassengerId &&
+                (p.OwnerUserId == OwnerId || User.IsInRole("Admin"))))
             return BadRequest();
-        }
-
-        bool flightExists = await _context.Flights.AnyAsync(f => f.Id == ticket.FlightId);
-        bool passengerExists = await _context.Passengers.AnyAsync(p => p.Id == ticket.PassengerId);
-
-        if (!flightExists || !passengerExists)
-        {
-            return BadRequest("Указанный рейс или пассажир не существует.");
-        }
-
-        _context.Entry(ticket).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!await _context.Tickets.AnyAsync(t => t.Id == id))
-            {
-                return NotFound();
-            }
-            throw;
-        }
-
+        ticket.FlightId = input.FlightId;
+        ticket.PassengerId = input.PassengerId;
+        ticket.SeatNumber = input.SeatNumber;
+        ticket.Price = input.Price;
+        // OwnerUserId, purchase date and status are never assigned from client data.
+        await context.SaveChangesAsync();
         return NoContent();
     }
 
     [HttpDelete("{id:int}")]
     public async Task<ActionResult> Delete(int id)
     {
-        Ticket? ticket = await _context.Tickets.FindAsync(id);
-
-        if (ticket is null)
-        {
-            return NotFound();
-        }
-
-        _context.Tickets.Remove(ticket);
-        await _context.SaveChangesAsync();
-
+        var ticket = await VisibleTickets.FirstOrDefaultAsync(t => t.Id == id);
+        if (ticket is null) return NotFound();
+        context.Tickets.Remove(ticket);
+        await context.SaveChangesAsync();
         return NoContent();
     }
 }

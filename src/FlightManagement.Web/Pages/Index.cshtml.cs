@@ -1,5 +1,5 @@
 using FlightManagement.Web.Services;
-using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,6 +10,7 @@ namespace FlightManagement.Web.Pages;
 public class IndexModel : PageModel
 {
     private readonly FlightApiService _apiService;
+    private readonly SignInManager<IdentityUser> _signIn;
 
     public List<FlightDto> Flights { get; set; } = new List<FlightDto>();
     public List<TicketDto> MyTickets { get; set; } = new List<TicketDto>();
@@ -19,9 +20,10 @@ public class IndexModel : PageModel
     [BindProperty]
     public BookingForm BookForm { get; set; } = new BookingForm();
 
-    public IndexModel(FlightApiService apiService)
+    public IndexModel(FlightApiService apiService, SignInManager<IdentityUser> signIn)
     {
         _apiService = apiService;
+        _signIn = signIn;
     }
 
     public async Task OnGetAsync()
@@ -32,6 +34,8 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostBookAsync()
     {
+        if (!ModelState.IsValid) return BadRequest();
+        BookForm.DateOfBirth = DateTime.SpecifyKind(BookForm.DateOfBirth, DateTimeKind.Utc);
         // 1. Создаём пассажира
         PassengerDto passenger = new PassengerDto
         {
@@ -98,27 +102,14 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostLogoutAsync()
     {
-        await HttpContext.SignOutAsync("Cookies");
+        await _signIn.SignOutAsync();
         return RedirectToPage("/Login");
     }
 
     private async Task LoadMyTicketsAsync()
     {
-        List<TicketDto> all = await _apiService.GetTicketsAsync();
-        string? username = User.Identity?.Name;
-
-        // Показываем билеты где имя пассажира совпадает с логином
-        // Для user — все билеты (демо), для конкретного пользователя — фильтр по email
-        MyTickets = username == "admin"
-            ? all
-            : all.Where(t => t.Passenger?.Email?.Contains(username ?? "") == true
-                          || t.Passenger?.FirstName?.ToLower() == username?.ToLower()).ToList();
-
-        // Если нет совпадений — показываем все (для демонстрации)
-        if (MyTickets.Count == 0)
-        {
-            MyTickets = all;
-        }
+        // Ownership is enforced by the API using the validated Identity user ID.
+        MyTickets = await _apiService.GetTicketsAsync();
     }
 }
 

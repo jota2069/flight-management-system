@@ -1,0 +1,10 @@
+@page
+@model FlightManagement.Web.Pages.RegisterModel
+<h1>Регистрация</h1>
+<p>Создаётся обычный аккаунт без административных прав. Не используйте пароль от других сервисов.</p>
+<form method="post">
+    <label>Логин <input asp-for="Username" autocomplete="username" required maxlength="256" /></label>
+    <label>Пароль <input asp-for="Password" type="password" autocomplete="new-password" required minlength="12" /></label>
+    <button type="submit">Зарегистрироваться</button>
+</form>
+<p>@Model.ErrorMessage</p>

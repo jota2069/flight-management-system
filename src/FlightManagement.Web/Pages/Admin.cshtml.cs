@@ -1,5 +1,5 @@
 using FlightManagement.Web.Services;
-using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,6 +10,7 @@ namespace FlightManagement.Web.Pages;
 public class AdminModel : PageModel
 {
     private readonly FlightApiService _apiService;
+    private readonly SignInManager<IdentityUser> _signIn;
 
     public List<FlightDto> Flights { get; set; } = new List<FlightDto>();
     public List<PassengerDto> Passengers { get; set; } = new List<PassengerDto>();
@@ -23,9 +24,10 @@ public class AdminModel : PageModel
     [BindProperty]
     public FlightDto EditInput { get; set; } = new FlightDto();
 
-    public AdminModel(FlightApiService apiService)
+    public AdminModel(FlightApiService apiService, SignInManager<IdentityUser> signIn)
     {
         _apiService = apiService;
+        _signIn = signIn;
     }
 
     public async Task OnGetAsync()
@@ -82,7 +84,7 @@ public class AdminModel : PageModel
 
     public async Task<IActionResult> OnPostLogoutAsync()
     {
-        await HttpContext.SignOutAsync("Cookies");
+        await _signIn.SignOutAsync();
         return RedirectToPage("/Login");
     }
 

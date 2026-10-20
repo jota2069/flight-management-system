@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace FlightManagement.Api.Models;
 
 public class Flight
@@ -11,6 +13,8 @@ public class Flight
     public int TotalSeats { get; set; }
     public string Status { get; set; } = "Scheduled";
 
+    [JsonIgnore]
     public ICollection<Ticket> Tickets { get; set; } = new List<Ticket>();
+    [JsonIgnore]
     public ICollection<FlightCrewAssignment> CrewAssignments { get; set; } = new List<FlightCrewAssignment>();
 }

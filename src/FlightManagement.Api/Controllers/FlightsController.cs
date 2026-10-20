@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using FlightManagement.Api.Data;
 using FlightManagement.Api.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -25,9 +26,10 @@ public class FlightsController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<List<Flight>>> GetAll()
     {
-        string cacheKey = "flights:all";
+        string cacheKey = "schedule:v2:flights:all";
         string? cached = await _redis.StringGetAsync(cacheKey);
 
         // Добавляем настройки для игнорирования циклических ссылок
@@ -44,8 +46,6 @@ public class FlightsController : ControllerBase
         }
 
         List<Flight> flights = await _context.Flights
-            .Include(f => f.Tickets)
-            .Include(f => f.CrewAssignments)
             .ToListAsync();
 
         string serializedFlights = JsonSerializer.Serialize(flights, jsonOptions);
@@ -55,9 +55,10 @@ public class FlightsController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [AllowAnonymous]
     public async Task<ActionResult<Flight>> GetById(int id)
     {
-        string cacheKey = $"flight:{id}";
+        string cacheKey = $"schedule:v2:flight:{id}";
         string? cached = await _redis.StringGetAsync(cacheKey);
 
         JsonSerializerOptions jsonOptions = new JsonSerializerOptions
@@ -89,6 +90,7 @@ public class FlightsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<Flight>> Create(Flight flight)
     {
         _context.Flights.Add(flight);
@@ -100,6 +102,7 @@ public class FlightsController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> Update(int id, Flight flight)
     {
         if (id != flight.Id)
@@ -129,6 +132,7 @@ public class FlightsController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> Delete(int id)
     {
         Flight? flight = await _context.Flights.FindAsync(id);
@@ -148,11 +152,11 @@ public class FlightsController : ControllerBase
 
     private async Task InvalidateCache(int? id = null)
     {
-        await _redis.KeyDeleteAsync("flights:all");
+        await _redis.KeyDeleteAsync("schedule:v2:flights:all");
 
         if (id.HasValue)
         {
-            await _redis.KeyDeleteAsync($"flight:{id}");
+            await _redis.KeyDeleteAsync($"schedule:v2:flight:{id}");
         }
     }
 }

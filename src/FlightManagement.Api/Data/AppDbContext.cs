@@ -1,9 +1,11 @@
 using FlightManagement.Api.Models;
+using FlightManagement.Security;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace FlightManagement.Api.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : FlightIdentityDbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -22,16 +24,21 @@ public class AppDbContext : DbContext
             entity.HasOne(t => t.Flight)
                 .WithMany(f => f.Tickets)
                 .HasForeignKey(t => t.FlightId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(t => t.Passenger)
                 .WithMany(p => p.Tickets)
                 .HasForeignKey(t => t.PassengerId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            entity.HasOne<IdentityUser>().WithMany().HasForeignKey(t => t.OwnerUserId)
+                .OnDelete(DeleteBehavior.Restrict);
             entity.Property(t => t.Price)
                 .HasColumnType("decimal(18,2)");
         });
+
+        modelBuilder.Entity<Passenger>().HasOne<IdentityUser>().WithMany()
+            .HasForeignKey(p => p.OwnerUserId).OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<FlightCrewAssignment>(entity =>
         {

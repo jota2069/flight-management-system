@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace FlightManagement.Api.Models;
 
 public class FlightAttendant
@@ -10,5 +12,6 @@ public class FlightAttendant
     public string Phone { get; set; } = string.Empty;
     public int ExperienceYears { get; set; }
 
+    [JsonIgnore]
     public ICollection<FlightCrewAssignment> CrewAssignments { get; set; } = new List<FlightCrewAssignment>();
 }

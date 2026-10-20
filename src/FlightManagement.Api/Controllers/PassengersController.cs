@@ -1,136 +1,72 @@
+using System.Security.Claims;
 using FlightManagement.Api.Data;
 using FlightManagement.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using StackExchange.Redis;
-using System.Text.Json;
 
 namespace FlightManagement.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/[controller]")]
-public class PassengersController : ControllerBase
+public class PassengersController(AppDbContext context) : ControllerBase
 {
-    private readonly AppDbContext _context;
-    private readonly IDatabase _redis;
-
-    public PassengersController(AppDbContext context, IConnectionMultiplexer redis)
-    {
-        _context = context;
-        _redis = redis.GetDatabase();
-    }
+    private string OwnerId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+    private IQueryable<Passenger> Visible => User.IsInRole("Admin")
+        ? context.Passengers : context.Passengers.Where(p => p.OwnerUserId == OwnerId);
 
     [HttpGet]
-    public async Task<ActionResult<List<Passenger>>> GetAll()
-    {
-        string cacheKey = "passengers:all";
-        string? cached = await _redis.StringGetAsync(cacheKey);
-
-        if (cached is not null)
-        {
-            List<Passenger>? cachedPassengers = JsonSerializer.Deserialize<List<Passenger>>(cached);
-            return Ok(cachedPassengers);
-        }
-
-        List<Passenger> passengers = await _context.Passengers
-            .Include(p => p.Tickets)
-            .ToListAsync();
-
-        await _redis.StringSetAsync(cacheKey, JsonSerializer.Serialize(passengers), TimeSpan.FromMinutes(5));
-
-        return Ok(passengers);
-    }
+    public async Task<ActionResult<List<Passenger>>> GetAll() => Ok(await Visible.AsNoTracking().ToListAsync());
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<Passenger>> GetById(int id)
     {
-        string cacheKey = $"passenger:{id}";
-        string? cached = await _redis.StringGetAsync(cacheKey);
-
-        if (cached is not null)
-        {
-            Passenger? cachedPassenger = JsonSerializer.Deserialize<Passenger>(cached);
-            return Ok(cachedPassenger);
-        }
-
-        Passenger? passenger = await _context.Passengers
-            .Include(p => p.Tickets)
-            .FirstOrDefaultAsync(p => p.Id == id);
-
-        if (passenger is null)
-        {
-            return NotFound();
-        }
-
-        await _redis.StringSetAsync(cacheKey, JsonSerializer.Serialize(passenger), TimeSpan.FromMinutes(5));
-
-        return Ok(passenger);
+        var passenger = await Visible.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+        return passenger is null ? NotFound() : Ok(passenger);
     }
 
     [HttpPost]
-    public async Task<ActionResult<Passenger>> Create(Passenger passenger)
+    public async Task<ActionResult<Passenger>> Create(Passenger input)
     {
-        _context.Passengers.Add(passenger);
-        await _context.SaveChangesAsync();
-
-        await InvalidateCache();
-
+        var passenger = new Passenger { OwnerUserId = OwnerId };
+        Copy(input, passenger);
+        context.Passengers.Add(passenger);
+        await context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetById), new { id = passenger.Id }, passenger);
     }
 
     [HttpPut("{id:int}")]
-    public async Task<ActionResult> Update(int id, Passenger passenger)
+    public async Task<ActionResult> Update(int id, Passenger input)
     {
-        if (id != passenger.Id)
-        {
-            return BadRequest();
-        }
-
-        _context.Entry(passenger).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!await _context.Passengers.AnyAsync(p => p.Id == id))
-            {
-                return NotFound();
-            }
-            throw;
-        }
-
-        await InvalidateCache(id);
-
+        var passenger = await Visible.FirstOrDefaultAsync(p => p.Id == id);
+        if (passenger is null) return NotFound();
+        if (id != input.Id) return BadRequest();
+        Copy(input, passenger);
+        await context.SaveChangesAsync();
         return NoContent();
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")] // A cascade would bypass the ticket-booking transaction.
     public async Task<ActionResult> Delete(int id)
     {
-        Passenger? passenger = await _context.Passengers.FindAsync(id);
-
-        if (passenger is null)
-        {
-            return NotFound();
-        }
-
-        _context.Passengers.Remove(passenger);
-        await _context.SaveChangesAsync();
-
-        await InvalidateCache(id);
-
+        var passenger = await context.Passengers.FindAsync(id);
+        if (passenger is null) return NotFound();
+        if (await context.Tickets.AnyAsync(t => t.PassengerId == id))
+            return Conflict("Сначала отмените билеты пассажира.");
+        context.Passengers.Remove(passenger);
+        await context.SaveChangesAsync();
         return NoContent();
     }
 
-    private async Task InvalidateCache(int? id = null)
+    private static void Copy(Passenger source, Passenger destination)
     {
-        await _redis.KeyDeleteAsync("passengers:all");
-
-        if (id.HasValue)
-        {
-            await _redis.KeyDeleteAsync($"passenger:{id}");
-        }
+        destination.FirstName = source.FirstName;
+        destination.LastName = source.LastName;
+        destination.PassportNumber = source.PassportNumber;
+        destination.Email = source.Email;
+        destination.Phone = source.Phone;
+        destination.DateOfBirth = DateTime.SpecifyKind(source.DateOfBirth, DateTimeKind.Utc);
     }
 }

@@ -30,6 +30,11 @@ services:
     environment:
       - CONNECTION_STRING=Host=db;Port=5432;Database=flightdb;Username=postgres;Password=postgres
       - REDIS_CONNECTION=cache:6379,abortConnect=false
+      - ASPNETCORE_ENVIRONMENT=Development
+      - PUBLIC_ORIGIN=http://localhost:8080
+      - KEY_RING_PATH=/var/flight-keys
+    volumes:
+      - identity_keys:/var/flight-keys
     depends_on:
       db:
         condition: service_healthy
@@ -42,11 +47,12 @@ services:
     image: nginx:alpine
     container_name: flight_nginx
     ports:
-      - "8080:80"
+      - "127.0.0.1:8080:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - api
+      - web
     networks:
       - flight-network
 
@@ -83,8 +89,12 @@ services:
     container_name: flight_web
     environment:
       - API_BASE_URL=http://api:8080/
-    ports:
-      - "5000:8080"
+      - CONNECTION_STRING=Host=db;Port=5432;Database=flightdb;Username=postgres;Password=postgres
+      - ASPNETCORE_ENVIRONMENT=Development
+      - PUBLIC_ORIGIN=http://localhost:8080
+      - KEY_RING_PATH=/var/flight-keys
+    volumes:
+      - identity_keys:/var/flight-keys
     depends_on:
       - api
     networks:
@@ -97,3 +107,4 @@ networks:
 volumes:
   postgres_data:
   grafana_data:
+  identity_keys:
