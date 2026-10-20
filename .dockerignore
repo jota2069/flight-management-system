@@ -1,0 +1,12 @@
+.git
+**/bin
+**/obj
+**/TestResults
+.env
+.env.*
+.flight-keys
+**/key-*.xml
+**/*.pfx
+**/*.p12
+**/api_log.txt
+**/*.log

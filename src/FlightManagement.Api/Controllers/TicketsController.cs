@@ -35,7 +35,7 @@ public class TicketsController(AppDbContext context) : ControllerBase
     public async Task<ActionResult<Ticket>> Create(Ticket input)
     {
         if (!ValidInput(input)) return BadRequest("Некорректное место или цена.");
-        await using var transaction = await context.Database.BeginTransactionAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted);
         var flights = await FlightLocks.Acquire(context, input.FlightId);
         if (!flights.TryGetValue(input.FlightId, out var flight)) return BadRequest("Рейс не найден.");
         if (!await PassengerAllowed(input.PassengerId)) return BadRequest("Пассажир не найден.");
@@ -71,7 +71,7 @@ public class TicketsController(AppDbContext context) : ControllerBase
         var original = await VisibleTickets.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
         if (original is null) return NotFound();
         if (id != input.Id || !ValidInput(input)) return BadRequest();
-        await using var transaction = await context.Database.BeginTransactionAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted);
         var flights = await FlightLocks.Acquire(context, original.FlightId, input.FlightId);
         var ticket = await LockedTicket(id);
         if (ticket is null || !CanAccess(ticket)) return NotFound();
@@ -103,7 +103,7 @@ public class TicketsController(AppDbContext context) : ControllerBase
     {
         var original = await VisibleTickets.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id);
         if (original is null) return NotFound();
-        await using var transaction = await context.Database.BeginTransactionAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted);
         await FlightLocks.Acquire(context, original.FlightId);
         var ticket = await LockedTicket(id);
         if (ticket is null || !CanAccess(ticket)) return NotFound();

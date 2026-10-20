@@ -143,11 +143,70 @@ public sealed class BookingTests(FlightHost host) : IClassFixture<FlightHost>
         Assert.Equal("23514", ((PostgresException)error.InnerException!).SqlState);
     }
 
+    [Fact]
+    public async Task CapacityReductionConcurrentWithBooking_NeverExceedsFinalCapacity()
+    {
+        using var admin = await host.RegisterAndLogin();
+        await host.MakeAdmin(admin);
+        var passenger = await host.Passenger(admin);
+        var flight = await host.Flight(3);
+        Assert.Equal(HttpStatusCode.Created,
+            (await admin.Api.PostAsJsonAsync("/api/Tickets", FlightHost.Booking(flight, passenger))).StatusCode);
+        flight.TotalSeats = 1;
+        var responses = await CompeteBehindRowLock(flight.Id,
+            () => admin.Api.PostAsJsonAsync("/api/Tickets", FlightHost.Booking(flight, passenger, "2B")),
+            () => admin.Api.PutAsJsonAsync($"/api/Flights/{flight.Id}", flight), bookingOnly: false);
+        Assert.True(
+            (responses[0].StatusCode == HttpStatusCode.Created && responses[1].StatusCode == HttpStatusCode.Conflict) ||
+            (responses[0].StatusCode == HttpStatusCode.Conflict && responses[1].StatusCode == HttpStatusCode.NoContent));
+        await using var db = host.Db();
+        var capacity = (await db.Flights.FindAsync(flight.Id))!.TotalSeats;
+        var count = await db.Tickets.CountAsync(t => t.FlightId == flight.Id);
+        Assert.True(count <= capacity);
+        Assert.Equal(responses[0].StatusCode == HttpStatusCode.Created ? 2 : 1, count);
+        Assert.Equal(responses[1].StatusCode == HttpStatusCode.NoContent ? 1 : 3, capacity);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public async Task FlightCreation_RejectsNonPositiveCapacity(int seats)
+    {
+        using var admin = await host.RegisterAndLogin();
+        await host.MakeAdmin(admin);
+        var input = new Flight { FlightNumber = "INVALID-CAPACITY", TotalSeats = seats,
+            DepartureTime = DateTime.UtcNow.AddDays(1), ArrivalTime = DateTime.UtcNow.AddDays(1).AddHours(1) };
+        Assert.Equal(HttpStatusCode.BadRequest, (await admin.Api.PostAsJsonAsync("/api/Flights", input)).StatusCode);
+        await using var db = host.Db();
+        Assert.False(await db.Flights.AnyAsync(f => f.FlightNumber == "INVALID-CAPACITY"));
+    }
+
+    [Fact]
+    public async Task BookingTransfer_ReservesDestinationAndReleasesSourceCapacity()
+    {
+        using var owner = await host.RegisterAndLogin();
+        var passenger = await host.Passenger(owner);
+        var from = await host.Flight(1);
+        var to = await host.Flight(1);
+        var response = await owner.Api.PostAsJsonAsync("/api/Tickets", FlightHost.Booking(from, passenger));
+        var ticket = (await response.Content.ReadFromJsonAsync<Ticket>())!;
+        Assert.Equal(HttpStatusCode.NoContent, (await owner.Api.PutAsJsonAsync($"/api/Tickets/{ticket.Id}",
+            new { ticket.Id, FlightId = to.Id, ticket.PassengerId, SeatNumber = "2B", Price = 1000m })).StatusCode);
+        await using var db = host.Db();
+        Assert.Equal(0, await db.Tickets.CountAsync(t => t.FlightId == from.Id));
+        Assert.Equal(1, await db.Tickets.CountAsync(t => t.FlightId == to.Id));
+        Assert.Equal(owner.Id, (await db.Tickets.FindAsync(ticket.Id))!.OwnerUserId);
+        Assert.Equal(HttpStatusCode.Created,
+            (await owner.Api.PostAsJsonAsync("/api/Tickets", FlightHost.Booking(from, passenger))).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict,
+            (await owner.Api.PostAsJsonAsync("/api/Tickets", FlightHost.Booking(to, passenger, "3C"))).StatusCode);
+    }
+
     // An external lock holds both HTTP requests at the same contention point.
     // pg_stat_activity proves that the requests reached PostgreSQL; no timing race
     // or in-process semaphore can make this test pass accidentally.
-    private async Task CompeteBehindRowLock(int flightId,
-        Func<Task<HttpResponseMessage>> first, Func<Task<HttpResponseMessage>> second)
+    private async Task<HttpResponseMessage[]> CompeteBehindRowLock(int flightId,
+        Func<Task<HttpResponseMessage>> first, Func<Task<HttpResponseMessage>> second, bool bookingOnly = true)
     {
         await using var blocker = new NpgsqlConnection(host.Connection);
         await blocker.OpenAsync();
@@ -170,7 +229,11 @@ public sealed class BookingTests(FlightHost host) : IClassFixture<FlightHost>
         }
         await transaction.CommitAsync();
         var responses = await Task.WhenAll(a, b);
-        Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Created);
-        Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Conflict);
+        if (bookingOnly)
+        {
+            Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Created);
+            Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Conflict);
+        }
+        return responses;
     }
 }

@@ -32,7 +32,7 @@ public class FlightsController(AppDbContext context, ScheduleCache cache) : Cont
         if (!ValidFlight(input)) return BadRequest("Некорректные параметры рейса.");
         var flight = new Flight();
         Copy(input, flight);
-        await using var transaction = await context.Database.BeginTransactionAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted);
         context.Flights.Add(flight);
         await context.SaveChangesAsync();
         await ScheduleCache.Advance(context);
@@ -45,7 +45,7 @@ public class FlightsController(AppDbContext context, ScheduleCache cache) : Cont
     public async Task<ActionResult> Update(int id, Flight input)
     {
         if (id != input.Id || !ValidFlight(input)) return BadRequest();
-        await using var transaction = await context.Database.BeginTransactionAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted);
         var flights = await FlightLocks.Acquire(context, id);
         if (!flights.TryGetValue(id, out var flight)) return NotFound();
         if (await context.Tickets.CountAsync(t => t.FlightId == id) > input.TotalSeats)
@@ -61,7 +61,7 @@ public class FlightsController(AppDbContext context, ScheduleCache cache) : Cont
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult> Delete(int id)
     {
-        await using var transaction = await context.Database.BeginTransactionAsync();
+        await using var transaction = await context.Database.BeginTransactionAsync(System.Data.IsolationLevel.ReadCommitted);
         var flights = await FlightLocks.Acquire(context, id);
         if (!flights.TryGetValue(id, out var flight)) return NotFound();
         if (await context.Tickets.AnyAsync(t => t.FlightId == id))

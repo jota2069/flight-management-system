@@ -31,6 +31,16 @@ public static class FlightSecurity
         if (!Path.IsPathFullyQualified(keyPath))
             throw new InvalidOperationException("KEY_RING_PATH must be absolute.");
         _ = PublicOrigin(config, environment);
+        if (OperatingSystem.IsWindows()) Directory.CreateDirectory(keyPath);
+        else
+        {
+            Directory.CreateDirectory(keyPath, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            var mode = File.GetUnixFileMode(keyPath);
+            const UnixFileMode others = UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
+            if ((mode & others) != 0)
+                throw new InvalidOperationException("KEY_RING_PATH must be private (0700). Existing permissions are never changed automatically.");
+        }
         services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keyPath))
             .SetApplicationName("FlightManagement.Identity.v1");
         services.AddIdentity<IdentityUser, IdentityRole>(options =>
@@ -79,6 +89,15 @@ public static class FlightSecurity
         });
     }
 
+    public static async Task SignOutEverywhere(SignInManager<IdentityUser> signIn,
+        System.Security.Claims.ClaimsPrincipal principal)
+    {
+        var user = await signIn.UserManager.GetUserAsync(principal);
+        if (user is not null && !(await signIn.UserManager.UpdateSecurityStampAsync(user)).Succeeded)
+            throw new InvalidOperationException("Could not revoke sessions.");
+        await signIn.SignOutAsync();
+    }
+
     private static Task ApiOrRedirect(RedirectContext<CookieAuthenticationOptions> context, int status)
     {
         if (context.Request.Path.StartsWithSegments("/api")) context.Response.StatusCode = status;
@@ -101,7 +120,8 @@ public static class FlightSecurity
         var origin = PublicOrigin(app.Configuration, app.Environment).GetLeftPart(UriPartial.Authority);
         app.Use(async (context, next) =>
         {
-            context.Response.Headers.CacheControl = "no-store";
+            context.Response.Headers.CacheControl = "no-cache, no-store";
+            context.Response.Headers.Pragma = "no-cache";
             if (!HttpMethods.IsGet(context.Request.Method) &&
                 !HttpMethods.IsHead(context.Request.Method) &&
                 !HttpMethods.IsOptions(context.Request.Method) &&

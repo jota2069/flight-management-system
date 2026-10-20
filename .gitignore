@@ -5,6 +5,13 @@
 
 # dotenv files
 .env
+.env.*
+!.env.example
+# Identity/DataProtection material must never be committed.
+.flight-keys/
+key-*.xml
+*.p12
+api_log.txt
 
 # User-specific files
 *.rsuser

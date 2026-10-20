@@ -6,8 +6,8 @@ namespace FlightManagement.Web.Pages;
 
 public class RegisterModel(UserManager<IdentityUser> users) : PageModel
 {
-    [BindProperty] public string Username { get; set; } = string.Empty;
-    [BindProperty] public string Password { get; set; } = string.Empty;
+    [BindProperty, System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.StringLength(256)] public string Username { get; set; } = string.Empty;
+    [BindProperty, System.ComponentModel.DataAnnotations.Required, System.ComponentModel.DataAnnotations.StringLength(128)] public string Password { get; set; } = string.Empty;
     public string ErrorMessage { get; set; } = string.Empty;
 
     public async Task<IActionResult> OnPostAsync()

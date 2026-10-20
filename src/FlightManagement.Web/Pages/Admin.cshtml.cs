@@ -84,7 +84,7 @@ public class AdminModel : PageModel
 
     public async Task<IActionResult> OnPostLogoutAsync()
     {
-        await _signIn.SignOutAsync();
+        await FlightManagement.Security.FlightSecurity.SignOutEverywhere(_signIn, User);
         return RedirectToPage("/Login");
     }
 

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Npgsql;
 using FlightManagement.Api.Data;
 using FlightManagement.Api.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -56,7 +57,11 @@ public class PassengersController(AppDbContext context) : ControllerBase
         if (await context.Tickets.AnyAsync(t => t.PassengerId == id))
             return Conflict("Сначала отмените билеты пассажира.");
         context.Passengers.Remove(passenger);
-        await context.SaveChangesAsync();
+        try { await context.SaveChangesAsync(); }
+        catch (DbUpdateException e) when (e.InnerException is PostgresException { SqlState: "23503" })
+        {
+            return Conflict("У пассажира появились связанные записи.");
+        }
         return NoContent();
     }
 

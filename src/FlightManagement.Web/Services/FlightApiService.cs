@@ -146,7 +146,7 @@ public class FlightApiService
         Func<PassengerDto, string> serialize = p => JsonSerializer.Serialize(p);
         try
         {
-            OnLog?.Invoke($"Создание пассажира {passenger.LastName}...");
+            OnLog?.Invoke("Создание пассажира...");
             StringContent body = new StringContent(serialize(passenger), Encoding.UTF8, "application/json");
             HttpResponseMessage response = await _httpClient.PostAsync("api/Passengers", body);
             if (!response.IsSuccessStatusCode) return null;

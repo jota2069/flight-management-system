@@ -4,7 +4,7 @@ services:
     container_name: flight_postgres
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD locally}
       POSTGRES_DB: flightdb
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -28,11 +28,11 @@ services:
       dockerfile: Dockerfile
     container_name: flight_api
     environment:
-      - CONNECTION_STRING=Host=db;Port=5432;Database=flightdb;Username=postgres;Password=postgres
+      - CONNECTION_STRING=Host=db;Port=5432;Database=flightdb;Username=postgres;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD locally}
       - REDIS_CONNECTION=cache:6379,abortConnect=false
       - ASPNETCORE_ENVIRONMENT=Development
       - PUBLIC_ORIGIN=http://localhost:8080
-      - KEY_RING_PATH=/var/flight-keys
+      - KEY_RING_PATH=/var/flight-keys/private
     volumes:
       - identity_keys:/var/flight-keys
     depends_on:
@@ -60,7 +60,7 @@ services:
     image: prom/prometheus:latest
     container_name: flight_prometheus
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
     networks:
@@ -70,10 +70,10 @@ services:
     image: grafana/grafana:latest
     container_name: flight_grafana
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD locally}
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
@@ -89,10 +89,10 @@ services:
     container_name: flight_web
     environment:
       - API_BASE_URL=http://api:8080/
-      - CONNECTION_STRING=Host=db;Port=5432;Database=flightdb;Username=postgres;Password=postgres
+      - CONNECTION_STRING=Host=db;Port=5432;Database=flightdb;Username=postgres;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD locally}
       - ASPNETCORE_ENVIRONMENT=Development
       - PUBLIC_ORIGIN=http://localhost:8080
-      - KEY_RING_PATH=/var/flight-keys
+      - KEY_RING_PATH=/var/flight-keys/private
     volumes:
       - identity_keys:/var/flight-keys
     depends_on:

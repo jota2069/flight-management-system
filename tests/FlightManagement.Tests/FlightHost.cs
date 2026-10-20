@@ -20,6 +20,7 @@ namespace FlightManagement.Tests;
 public sealed class FlightHost : IAsyncLifetime
 {
     private string _adminConnection = "";
+    public string EnvironmentName { get; init; } = "Development";
     public string Connection { get; private set; } = "";
     public string KeyPath { get; } = Path.Combine(Path.GetTempPath(), "flight-test-keys-" + Guid.NewGuid().ToString("N"));
     public string Database { get; } = "flight_test_" + Guid.NewGuid().ToString("N");
@@ -144,8 +145,9 @@ public sealed class FlightHost : IAsyncLifetime
 
     private static void Configure(IWebHostBuilder builder, FlightHost host)
     {
-        builder.UseEnvironment("Development").UseSetting("CONNECTION_STRING", host.Connection)
+        builder.UseEnvironment(host.EnvironmentName).UseSetting("CONNECTION_STRING", host.Connection)
             .UseSetting("KEY_RING_PATH", host.KeyPath).UseSetting("PUBLIC_ORIGIN", "https://flight.test")
+            .UseSetting("API_BASE_URL", "https://flight.test/")
             .UseSetting("Logging:LogLevel:Default", "Warning");
     }
 
